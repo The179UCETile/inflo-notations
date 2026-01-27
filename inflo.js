@@ -1,6 +1,6 @@
 class inflo {
     static isNum = /^(?<s>[+-])?(?:(?<i>\d+)(?:\.(?<f>\d*))?|\.(?<f2>\d+))(?:[Ee](?<es>[+-])?(?<e>\d+))?$/;
-    static prec = 30n;
+    static prec = 20n;
     static pow10 = 10n ** inflo.prec;
     static pow10_n = inflo.pow10 * 10n;
     static PI;
@@ -190,9 +190,8 @@ class inflo {
         if (b.isz) return new inflo("1");
         // Check if the exponent is an integer
         // If it is, use exponentiation by squaring (works for negative bases)
-        // Make sure that b is less than 1e21 otherwise BigInt will try to convert "1e21" into a BigInt which causes an error
-        if ((b.e >= 0n || b.mod("1").isz) && (b.compare("1e21") < 0)) {
-            let n = BigInt(b.trunc().toString()); // Get integer value
+        if (b.e >= 0n || b.mod("1").isz) {
+            let n = b.trunc(); // Get integer value
             return this.__intPow__(n);
         }
         // Fractional exponent logic: a^b = exp(b * ln(a))
@@ -337,14 +336,14 @@ class inflo {
     // Helper: Exponentiation by Squaring
     __intPow__(n) {
         let x = this.__copy__();
-        if (n < 0n) {
-            return new inflo("1").divide(x.__intPow__(-n));
+        if (n.compare("0") === -1) {
+            return new inflo("1").divide(x.__intPow__(n.__negate__()));
         }
         let res = new inflo("1");
-        while (n > 0n) {
-            if (n % 2n === 1n) res = res.times(x);
+        while (n.compare("0") === 1) {
+            if (n.mod("2").compare("1") === 0) res = res.times(x);
             x = x.times(x);
-            n /= 2n;
+            n = n.divide("2").trunc();
         }
         return res;
     }

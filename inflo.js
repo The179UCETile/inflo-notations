@@ -280,22 +280,7 @@ class inflo {
     }
     cos() {
         if (this.isz) return new inflo("1");
-        // 1. Argument Reduction
-        let x = this.mod(inflo.TAU);
-        // 2. Taylor Series
-        let term = new inflo("1");
-        let sum = new inflo("1");
-        let xSq = x.times(x);
-        let i = 2n;
-        while (true) {
-            // term = -term * x^2 / (i * (i - 1))
-            term = term.times(xSq).divide(i * (i - 1n)).__negate__();
-            let prevSum = sum.__copy__();
-            sum = sum.plus(term);
-            if (sum.compare(prevSum) === 0) break;
-            i += 2n;
-        }
-        return sum;
+        return this.minus(inflo.PI.divide(2)).sin()
     }
     tan() {
         let s = this.sin();
@@ -398,7 +383,25 @@ class inflo {
         }
     }
     static recompute() {
-        // 1. Calculate PI using Machin Formula (Internal helper)
+        // Helper for ln(x) using Taylor series for 2 * artanh((x-1)/(x+1))
+        // This avoids using the static LN10 property during initial boot
+        const internalLn = (strVal) => {
+            let x = new inflo(strVal);
+            let sum = new inflo("0");
+            let prevSum = new inflo("-1");
+            let z = x.minus("1").divide(x.plus("1"));
+            let zs = z.times(z);
+            let term = z;
+            let i = 1n;
+            while (sum.compare(prevSum) !== 0) {
+                prevSum = sum.__copy__();
+                sum = sum.plus(term.divide(i));
+                term = term.times(zs);
+                i += 2n;
+            }
+            return sum.times("2");
+        };
+        // 1. Calculate PI using Machin-like formula
         const atan = (x_inv) => {
             let xInvInflo = new inflo(x_inv);
             let xSq = xInvInflo.times(xInvInflo);
@@ -416,11 +419,12 @@ class inflo {
             return sum;
         };
         inflo.PI = atan("5").times("4").minus(atan("239")).times("4");
-        // 2. Calculate E via exp(1)
+        // 2. Fundamental Logarithms
+        inflo.LN2 = internalLn("2");
+        const ln5 = internalLn("5");
+        inflo.LN10 = inflo.LN2.plus(ln5);
+        // 3. Calculate E via exp(1) - now safe because LN10 is set
         inflo.E = new inflo("1").exp();
-        // 3. Essential Logarithms (LN10 is required for the ln() method to work on large numbers)
-        inflo.LN2 = new inflo("2").ln();
-        inflo.LN10 = inflo.LN2.plus(new inflo("5").ln());
         // 4. Common Roots
         inflo.SQRT2 = new inflo("2").sqrt();
     }

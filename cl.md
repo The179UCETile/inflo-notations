@@ -1,9 +1,32 @@
 # changelogs
 # Version 1.0: Initial release
- * Added constructor
+  * Added constructor
+  * Normalization
 ### Version 1.0.1: Basic arithmetic
- * Addition       `plus()`
- * Subtraction    `minus()`
- * Multiplication `times()`
- * Division       `divide()`
+  * Addition       `plus()`
+  * Subtraction    `minus()`
+  * Multiplication `times()`
+  * Division       `divide()`
+### Version 1.0.2: Stringify
+  * Stringify      `toString()`
 ## Version 1.1: Math functions
+  * Comparison     `compare()`
+  * Square root    `sqrt()`
+  * e^x            `exp()`
+  * Logarithm      `ln()`
+  * Log base-10    `log10()`
+  * Exponents      `pow()`
+### Version 1.1.1: Cloning and Negating
+  * Clone          `__copy__()`
+  * Negate         `__negate()`
+### Version 1.1.2: Mathematical constants
+  * Pi             `inflo.PI`
+  * Euler's Number `inflo.E`
+  * Log 10         `inflo.LN10`
+  * Log 2          `info.LN2`
+  * Square root 2  `inflo.SQRT2`
+### Version 1.1.3: Integer rounding
+  * Floor          `floor()`
+  * Ceiling        `ceil()`
+  * Trunc          `trunc()`
+  * Modulo         `mod()`

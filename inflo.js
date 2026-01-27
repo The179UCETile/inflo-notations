@@ -3,13 +3,11 @@ class inflo {
     static prec = 30n;
     static pow10 = 10n ** inflo.prec;
     static pow10_n = inflo.pow10 * 10n;
-
     static PI;
     static E;
     static LN10;
     static LN2;
     static SQRT2;
-
     constructor(inp) {
         const s = typeof inp === "string" ? inp : inp.toString();
         const ss = s.trim();
@@ -109,18 +107,15 @@ class inflo {
     }
     exp() {
         if (this.isz) return new inflo(1);
-
         // 1. Handle negative exponents: e^(-x) = 1 / e^x
         if (this.man < 0n) {
             return new inflo(1).divide(this.__negate__().exp());
         }
-
         // 2. Argument Reduction (Scaling and Squaring)
         // We want to scale 'x' down until it is small (e.g., < 0.5)
         let k = 0n;
         let x = this.__copy__();
         const threshold = new inflo("0.5");
-
         while (x.compare(threshold) > 0) {
             x = x.divide(2);
             k++;
@@ -130,42 +125,34 @@ class inflo {
         let term = new inflo("1");
         let sum = new inflo("1");
         let i = 1n;
-
         while (true) {
             // term = term * x / i
             term = term.times(x).divide(i);
             let prevSum = sum.__copy__();
             sum = sum.plus(term);
-
             // If the sum stops changing within our precision, we are done
             if (sum.compare(prevSum) === 0) break;
             i++;
         }
-
         // 4. Squaring back up: (e^(x/2^k))^(2^k)
         for (let j = 0n; j < k; j++) {
             sum = sum.times(sum);
         }
-
         return sum;
     }
-
     ln() {
         if (this.isz || this.man <= 0n) throw new Error("ln undefined for non-positive numbers");
-
         // 1. Argument Reduction
         // We want to transform x into x_reduced * 10^k such that 0.1 < x_reduced < 10
         // Based on your __fix__, this.man is always ~10^prec
         // x = (man / 10^prec) * 10^e
         let x = this.__copy__();
         let k = x.e + inflo.prec;
-
         // Normalize x to be between [0.5, 1.5] for fast convergence
         x.e = -inflo.prec;
         // 2. Further reduction if x is far from 1
         // Using ln(x) = ln(x/2) + ln(2) or similar can help, 
         // but scaling to 10^k is usually enough for 50-digit precision.
-
         // 3. Halley's Method or Taylor Series
         // We use the series for ln((1+z)/(1-z)) where z = (x-1)/(x+1)
         let sum = new inflo("0");
@@ -174,7 +161,6 @@ class inflo {
         let zs = z.times(z);
         let term = z;
         let i = 1n;
-
         while (sum.compare(prevSum) !== 0) {
             prevSum = sum.__copy__();
             sum = sum.plus(term.divide(i));
@@ -182,7 +168,6 @@ class inflo {
             i += 2n;
         }
         sum = sum.times("2");
-
         // 4. Combine: ln(x) = ln(x_reduced) + k * ln(10)
         // Note: This requires a precomputed LN10 to avoid infinite recursion
         if (k !== 0n) {
@@ -194,18 +179,15 @@ class inflo {
         let a = this.__copy__();
         return a.ln().divide(new inflo("10").ln());
     }
-pow(o) {
+    pow(o) {
         let b = o instanceof inflo ? o : new inflo(o);
-        
         // Handle 0^b
         if (this.isz) {
             if (b.man <= 0n) throw new Error("0^0 or 0^negative is undefined");
             return new inflo("0");
         }
-
         // Handle a^0
         if (b.isz) return new inflo("1");
-
         // Check if the exponent is an integer
         // If it is, use exponentiation by squaring (works for negative bases)
         // Make sure that b is less than 1e21 otherwise BigInt will try to convert "1e21" into a BigInt which causes an error
@@ -213,48 +195,38 @@ pow(o) {
             let n = BigInt(b.trunc().toString()); // Get integer value
             return this.__intPow__(n);
         }
-
         // Fractional exponent logic: a^b = exp(b * ln(a))
         if (this.man < 0n) {
             throw new Error("Negative base with fractional exponent results in a complex number");
         }
-        
         return this.ln().times(b).exp();
     }
     floor() {
         if (this.isz) return new inflo("0");
-
         // 1. If the true exponent is negative, the value is between -1 and 1
         const trueExp = this.e + BigInt(this.man.toString().replace('-', '').length) - 1n;
         if (trueExp < 0n) {
             return this.man < 0n ? new inflo("-1") : new inflo("0");
         }
-
         // 2. Identify how many digits are fractional
         // Value = man * 10^e. If e is >= 0, it's already an integer.
         if (this.e >= 0n) return this.__copy__();
-
         // 3. Truncate fractional digits
         let res = this.__copy__();
         let powerOf10 = 10n ** (-this.e);
         let remainder = res.man % powerOf10;
-
         res.man -= remainder;
-
         // 4. Floor logic for negative numbers (e.g., floor(-1.1) = -2)
         if (this.man < 0n && remainder !== 0n) {
             res.man -= powerOf10;
         }
-
         res.__fix__();
         return res;
     }
     ceil() {
         if (this.isz) return new inflo("0");
-
         // If it's already an integer, return copy
         if (this.e >= 0n) return this.__copy__();
-
         // A simple trick for ceil: -floor(-x)
         return this.__negate__().floor().__negate__();
     }
@@ -267,12 +239,10 @@ pow(o) {
     mod(o) {
         let b = o instanceof inflo ? o : new inflo(o);
         if (b.isz) throw new Error("division by zero");
-
         let aMan = this.man;
         let bMan = b.man;
         let aExp = this.e;
         let bExp = b.e;
-
         // Align exponents to the lower one to treat them as integers
         if (aExp > bExp) {
             aMan *= 10n ** (aExp - bExp);
@@ -280,16 +250,58 @@ pow(o) {
         } else if (bExp > aExp) {
             bMan *= 10n ** (bExp - aExp);
         }
-
         // Use native BigInt modulo
         let resMan = aMan % bMan;
-
         // Create result
         let res = new inflo("0");
         res.man = resMan;
         res.e = aExp;
         res.__fix__();
         return res;
+    }
+    sin() {
+        if (this.isz) return new inflo("0");
+        // 1. Argument Reduction: x = x mod 2PI
+        let x = this.mod(inflo.TAU);
+        // 2. Taylor Series
+        let term = x.__copy__();
+        let sum = x.__copy__();
+        let xSq = x.times(x);
+        let i = 3n;
+        while (true) {
+            // term = -term * x^2 / (i * (i - 1))
+            term = term.times(xSq).divide(i * (i - 1n)).__negate__();
+            let prevSum = sum.__copy__();
+            sum = sum.plus(term);
+            if (sum.compare(prevSum) === 0) break;
+            i += 2n;
+        }
+        return sum;
+    }
+    cos() {
+        if (this.isz) return new inflo("1");
+        // 1. Argument Reduction
+        let x = this.mod(inflo.TAU);
+        // 2. Taylor Series
+        let term = new inflo("1");
+        let sum = new inflo("1");
+        let xSq = x.times(x);
+        let i = 2n;
+        while (true) {
+            // term = -term * x^2 / (i * (i - 1))
+            term = term.times(xSq).divide(i * (i - 1n)).__negate__();
+            let prevSum = sum.__copy__();
+            sum = sum.plus(term);
+            if (sum.compare(prevSum) === 0) break;
+            i += 2n;
+        }
+        return sum;
+    }
+    tan() {
+        let s = this.sin();
+        let c = this.cos();
+        if (c.isz) throw new Error("Tangent undefined (division by zero)");
+        return s.divide(c);
     }
     toString() {
         if (this.isz) return "0";
@@ -337,13 +349,12 @@ pow(o) {
         // isz (is zero) doesn't change when negating
         return x;
     }
-// Helper: Exponentiation by Squaring
+    // Helper: Exponentiation by Squaring
     __intPow__(n) {
         let x = this.__copy__();
         if (n < 0n) {
             return new inflo("1").divide(x.__intPow__(-n));
         }
-        
         let res = new inflo("1");
         while (n > 0n) {
             if (n % 2n === 1n) res = res.times(x);
@@ -405,14 +416,11 @@ pow(o) {
             return sum;
         };
         inflo.PI = atan("5").times("4").minus(atan("239")).times("4");
-
         // 2. Calculate E via exp(1)
         inflo.E = new inflo("1").exp();
-
         // 3. Essential Logarithms (LN10 is required for the ln() method to work on large numbers)
         inflo.LN2 = new inflo("2").ln();
         inflo.LN10 = inflo.LN2.plus(new inflo("5").ln());
-
         // 4. Common Roots
         inflo.SQRT2 = new inflo("2").sqrt();
     }

@@ -1,2 +1,2 @@
-# inflo-arbitrary-precision
-Arbitrary-precision number format
+# inflo-notations
+Arbitrary-precision number format with notations
